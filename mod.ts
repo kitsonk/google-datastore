@@ -1,16 +1,18 @@
 // Copyright 2022 Kitson P. Kelly. All rights reserved. MIT License
 
-/** APIs for using Google Datastore from Deno.
+/** APIs for using [Google Datastore](https://cloud.google.com/datastore) from
+ * Deno.
+ *
+ * Google Datastore is Firestore in Datastore more under the hood these days,
+ * but has a more concise API and lacks the complex rule system that Firestore
+ * running in its native mode provides.
  *
  * @module
  */
 
-import type * as types from "./types.d.ts";
-import {
-  createOAuth2Token,
-  type OAuth2Token,
-} from "https://deno.land/x/deno_gcp_admin@0.0.5/auth.ts";
 import * as base64 from "https://deno.land/std@0.139.0/encoding/base64.ts";
+import type * as types from "./types.d.ts";
+import { createOAuth2Token, type OAuth2Token } from "./auth.ts";
 
 export interface DatastoreInit {
   client_email: string;
@@ -349,15 +351,30 @@ class DatastoreOperations {
   }
 }
 
+/** An interface to [Google Datastore](https://cloud.google.com/datastore).
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { Datastore } from "https://deno.land/x/google_datastore/mod.ts";
+ * import keys from "./service-account.json" assert { type: "json" };
+ *
+ * const datastore = new Datastore(keys);
+ *
+ * const result = await datastore.query({ kind: "book" });
+ * ```
+ */
 export class Datastore {
   #auth: Auth;
   #indexes: DatastoreIndexes;
   #operations: DatastoreOperations;
 
+  /** APIs related to creating and managing indexes. */
   get indexes(): DatastoreIndexes {
     return this.#indexes;
   }
 
+  /** APIs related to managing operations (long running processes). */
   get operations(): DatastoreOperations {
     return this.#operations;
   }
@@ -679,8 +696,8 @@ interface EntityMetaData {
   [datastoreKey]: types.Key;
 }
 
-/** Convert a Datastore `Entity` to a JavaScript object, which can then be
- * serialized easily back into an `Entity`. */
+/** Convert a Datastore {@linkcode types.Entity Entity} to a JavaScript object,
+ * which can then be serialized easily back into an `Entity`. */
 export function entityToObject<O>(entity: types.Entity): O & EntityMetaData {
   // deno-lint-ignore no-explicit-any
   const o: any = {};
