@@ -700,7 +700,7 @@ interface EntityMetaData {
  * which can then be serialized easily back into an `Entity`. */
 export function entityToObject<O>(entity: types.Entity): O & EntityMetaData {
   // deno-lint-ignore no-explicit-any
-  const o: any = {};
+  const o: any = Object.create(null);
   for (const [key, value] of Object.entries(entity.properties)) {
     o[key] = datastoreValueToValue(value);
   }
