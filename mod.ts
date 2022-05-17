@@ -11,7 +11,39 @@
  */
 
 import * as base64 from "https://deno.land/std@0.139.0/encoding/base64.ts";
-import type * as types from "./types.d.ts";
+import type {
+  CommitRequest,
+  CommitResponse,
+  Entity,
+  GoogleDatastoreAdminV1Index,
+  GoogleDatastoreAdminV1IndexOutput,
+  GoogleDatastoreAdminV1ListIndexesResponse,
+  GoogleLongrunningListOperationsResponse,
+  GoogleLongrunningOperation,
+  GqlQuery,
+  Key,
+  LatLng,
+  LookupRequest,
+  LookupResponse,
+  Mutation,
+  Query,
+  ReadOptions,
+  ReserveIdsRequest,
+  RunQueryResponse,
+  TransactionOptions,
+  Value,
+  ValueArray,
+  ValueBlob,
+  ValueBoolean,
+  ValueDouble,
+  ValueEntity,
+  ValueGeoPoint,
+  ValueInteger,
+  ValueKey,
+  ValueNull,
+  ValueString,
+  ValueTimestamp,
+} from "./types.d.ts";
 import { createOAuth2Token, type OAuth2Token } from "./auth.ts";
 
 export interface DatastoreInit {
@@ -125,9 +157,9 @@ class DatastoreIndexes {
    *
    * Indexes with a single property cannot be created. */
   async create(
-    index: types.GoogleDatastoreAdminV1Index,
+    index: GoogleDatastoreAdminV1Index,
   ): Promise<
-    types.GoogleLongrunningOperation<types.GoogleDatastoreAdminV1IndexOutput>
+    GoogleLongrunningOperation<GoogleDatastoreAdminV1IndexOutput>
   > {
     let token = this.#auth.token;
     if (!token || token.expired) {
@@ -163,7 +195,7 @@ class DatastoreIndexes {
   async delete(
     indexId: string | { indexId: string },
   ): Promise<
-    types.GoogleLongrunningOperation<types.GoogleDatastoreAdminV1IndexOutput>
+    GoogleLongrunningOperation<GoogleDatastoreAdminV1IndexOutput>
   > {
     let token = this.#auth.token;
     if (!token || token.expired) {
@@ -187,7 +219,7 @@ class DatastoreIndexes {
   /** Gets an index. */
   async get(
     indexId: string | { indexId: string },
-  ): Promise<types.GoogleDatastoreAdminV1IndexOutput> {
+  ): Promise<GoogleDatastoreAdminV1IndexOutput> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
@@ -213,7 +245,7 @@ class DatastoreIndexes {
    * and may occasionally return stale results. */
   async list(
     options?: ListOptions,
-  ): Promise<types.GoogleDatastoreAdminV1ListIndexesResponse> {
+  ): Promise<GoogleDatastoreAdminV1ListIndexesResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
@@ -305,7 +337,7 @@ class DatastoreOperations {
   async get(
     name: string | { name: string },
   ): Promise<
-    types.GoogleLongrunningOperation<types.GoogleDatastoreAdminV1IndexOutput>
+    GoogleLongrunningOperation<GoogleDatastoreAdminV1IndexOutput>
   > {
     let token = this.#auth.token;
     if (!token || token.expired) {
@@ -329,7 +361,7 @@ class DatastoreOperations {
   /** Lists operations that match the specified filter in the request. */
   async list(
     options?: ListOptions,
-  ): Promise<types.GoogleLongrunningListOperationsResponse> {
+  ): Promise<GoogleLongrunningListOperationsResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
@@ -387,7 +419,7 @@ export class Datastore {
 
   /** Allocates IDs for the given keys, which is useful for referencing an
    * entity before it is inserted. */
-  async allocateIds(...keys: types.Key[]): Promise<types.Key[]> {
+  async allocateIds(...keys: Key[]): Promise<Key[]> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
@@ -412,7 +444,7 @@ export class Datastore {
 
   /** Begins a new transaction. */
   async beginTransaction(
-    transactionOptions: types.TransactionOptions = { readWrite: {} },
+    transactionOptions: TransactionOptions = { readWrite: {} },
   ): Promise<string> {
     let token = this.#auth.token;
     if (!token || token.expired) {
@@ -439,15 +471,15 @@ export class Datastore {
   /** Commits a transaction, optionally creating, deleting or modifying some
    * entities. */
   async commit(
-    mutations: types.Mutation[],
+    mutations: Mutation[],
     transactional = true,
     transaction?: string,
-  ): Promise<types.CommitResponse> {
+  ): Promise<CommitResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
     }
-    const body: types.CommitRequest = {
+    const body: CommitRequest = {
       mode: transactional ? "TRANSACTIONAL" : "NON_TRANSACTIONAL",
       mutations,
       transaction,
@@ -472,16 +504,14 @@ export class Datastore {
 
   /** Looks up entities by key. */
   async lookup(
-    keys: types.Key[],
-    readOptions?: types.ReadOptions,
-  ): Promise<types.LookupResponse> {
+    keys: Key[],
+    readOptions?: ReadOptions,
+  ): Promise<LookupResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
     }
-    const body: types.LookupRequest = readOptions
-      ? { keys, readOptions }
-      : { keys };
+    const body: LookupRequest = readOptions ? { keys, readOptions } : { keys };
     const res = await fetch(
       `${Datastore.API_ROOT}${this.#auth.init.project_id}:lookup`,
       {
@@ -502,12 +532,12 @@ export class Datastore {
 
   /** Prevents the supplied keys' IDs from being auto-allocated by Cloud
    * Datastore. */
-  async reserveIds(keys: types.Key[], databaseId?: string): Promise<void> {
+  async reserveIds(keys: Key[], databaseId?: string): Promise<void> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
     }
-    const body: types.ReserveIdsRequest = databaseId
+    const body: ReserveIdsRequest = databaseId
       ? { databaseId, keys }
       : { keys };
     const res = await fetch(
@@ -551,7 +581,7 @@ export class Datastore {
   }
 
   /** Queries for entities. */
-  async runQuery(query: types.Query): Promise<types.RunQueryResponse> {
+  async runQuery(query: Query): Promise<RunQueryResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
@@ -575,7 +605,7 @@ export class Datastore {
   }
 
   /** Queries for entities. */
-  async runGqlQuery(gqlQuery: types.GqlQuery): Promise<types.RunQueryResponse> {
+  async runGqlQuery(gqlQuery: GqlQuery): Promise<RunQueryResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
@@ -604,47 +634,47 @@ export class Datastore {
   static readonly SCOPES = "https://www.googleapis.com/auth/datastore";
 }
 
-function isValueArray(value: types.Value): value is types.ValueArray {
+function isValueArray(value: Value): value is ValueArray {
   return "arrayValue" in value;
 }
 
-function isValueBlob(value: types.Value): value is types.ValueBlob {
+function isValueBlob(value: Value): value is ValueBlob {
   return "blobValue" in value;
 }
 
-function isValueBoolean(value: types.Value): value is types.ValueBoolean {
+function isValueBoolean(value: Value): value is ValueBoolean {
   return "booleanValue" in value;
 }
 
-function isValueDouble(value: types.Value): value is types.ValueDouble {
+function isValueDouble(value: Value): value is ValueDouble {
   return "doubleValue" in value;
 }
 
-function isValueEntity(value: types.Value): value is types.ValueEntity {
+function isValueEntity(value: Value): value is ValueEntity {
   return "entityValue" in value;
 }
 
-function isValueGeoPoint(value: types.Value): value is types.ValueGeoPoint {
+function isValueGeoPoint(value: Value): value is ValueGeoPoint {
   return "geoPointValue" in value;
 }
 
-function isValueInteger(value: types.Value): value is types.ValueInteger {
+function isValueInteger(value: Value): value is ValueInteger {
   return "integerValue" in value;
 }
 
-function isValueKey(value: types.Value): value is types.ValueKey {
+function isValueKey(value: Value): value is ValueKey {
   return "keyValue" in value;
 }
 
-function isValueNull(value: types.Value): value is types.ValueNull {
+function isValueNull(value: Value): value is ValueNull {
   return "nullValue" in value;
 }
 
-function isValueString(value: types.Value): value is types.ValueString {
+function isValueString(value: Value): value is ValueString {
   return "stringValue" in value;
 }
 
-function isValueTimestamp(value: types.Value): value is types.ValueTimestamp {
+function isValueTimestamp(value: Value): value is ValueTimestamp {
   return "timestampValue" in value;
 }
 
@@ -653,8 +683,8 @@ function stringAsInteger(value: string): number | bigint {
   return num > Number.MAX_SAFE_INTEGER ? BigInt(value) : num;
 }
 
-/** Convert a Datastore `Value` to a JavaScript value. */
-export function datastoreValueToValue(value: types.Value): unknown {
+/** Convert a Datastore {@linkcode Value} to a JavaScript value. */
+export function datastoreValueToValue(value: Value): unknown {
   if (isValueArray(value)) {
     return value.arrayValue.values.map(datastoreValueToValue);
   }
@@ -693,12 +723,12 @@ export function datastoreValueToValue(value: types.Value): unknown {
 const datastoreKey = Symbol.for("google.datastore.key");
 
 interface EntityMetaData {
-  [datastoreKey]: types.Key;
+  [datastoreKey]: Key;
 }
 
-/** Convert a Datastore {@linkcode types.Entity Entity} to a JavaScript object,
- * which can then be serialized easily back into an `Entity`. */
-export function entityToObject<O>(entity: types.Entity): O & EntityMetaData {
+/** Convert a Datastore {@linkcode Entity} to a JavaScript object,
+ * which can then be serialized easily back into an {@linkcode Entity}. */
+export function entityToObject<O>(entity: Entity): O & EntityMetaData {
   // deno-lint-ignore no-explicit-any
   const o: any = Object.create(null);
   for (const [key, value] of Object.entries(entity.properties)) {
@@ -713,7 +743,7 @@ export function entityToObject<O>(entity: types.Entity): O & EntityMetaData {
   return o as O & EntityMetaData;
 }
 
-function isKey(value: unknown): value is types.Key {
+function isKey(value: unknown): value is Key {
   return value !== null && typeof value === "object" && "path" in value &&
     // deno-lint-ignore no-explicit-any
     Array.isArray((value as any).path) &&
@@ -721,7 +751,7 @@ function isKey(value: unknown): value is types.Key {
     (value as any).path.length >= 1;
 }
 
-function isLatLng(value: unknown): value is types.LatLng {
+function isLatLng(value: unknown): value is LatLng {
   return value !== null && typeof value === "object" && "latitude" in value &&
     "longitude" in value;
 }
@@ -732,7 +762,7 @@ function isSerializeable(value: unknown): value is { toJSON(): any } {
 }
 
 /** A symbol which can be used to provide a custom method to generate an
- * `Entity` serialization for an object.  When performing
+ * {@linkcode Entity} serialization for an object.  When performing
  * {@linkcode objectToEntity}, this method will be used instead of built in
  * serialization of objects to entities.
  *
@@ -758,11 +788,11 @@ function isSerializeable(value: unknown): value is { toJSON(): any } {
  */
 export const toEntity = Symbol.for("google.datastore.toEntity");
 
-function hasToEntity<T>(value: T): value is T & { [toEntity](): types.Entity } {
+function hasToEntity<T>(value: T): value is T & { [toEntity](): Entity } {
   return value !== null && typeof value === "object" && toEntity in value;
 }
 
-function toValue(value: unknown): types.Value | undefined {
+function toValue(value: unknown): Value | undefined {
   switch (typeof value) {
     case "bigint":
       return { integerValue: value.toString(10) };
@@ -799,9 +829,7 @@ function toValue(value: unknown): types.Value | undefined {
       if (Array.isArray(value)) {
         return {
           arrayValue: {
-            values: value.map(toValue).filter((value) =>
-              !!value
-            ) as types.Value[],
+            values: value.map(toValue).filter((value) => !!value) as Value[],
           },
         };
       }
@@ -828,14 +856,14 @@ function toValue(value: unknown): types.Value | undefined {
  * stored in Google Datastore. If the object as a {@linkcode toEntity} symbol
  * method, it will be used to serialize the entity. */
 // deno-lint-ignore no-explicit-any
-export function objectToEntity(obj: any): types.Entity {
+export function objectToEntity(obj: any): Entity {
   if (hasToEntity(obj)) {
     return obj.toEntity();
   }
   if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {
     throw new TypeError("Only objects can be converted to entities");
   }
-  const properties: Record<string, types.Value> = Object.create(null);
+  const properties: Record<string, Value> = Object.create(null);
   for (const [key, value] of Object.entries(obj)) {
     if (key.match(/^__.*__$/)) {
       throw new TypeError("Entity property keys cannot match __.*__.");
@@ -845,13 +873,13 @@ export function objectToEntity(obj: any): types.Entity {
       properties[key] = propertyValue;
     }
   }
-  const key: types.Key | undefined = obj[datastoreKey];
+  const key: Key | undefined = obj[datastoreKey];
   return key ? { key, properties } : { properties };
 }
 
-/** Assign a datastore `Key` to a JavaScript object. This key will then be set
- * in any resulting `Entity`. */
-export function objectSetKey(obj: unknown, key: types.Key): void {
+/** Assign a datastore {@linkcode Key} to a JavaScript object. This key will
+ * then be set in any resulting {@linkcode Entity}. */
+export function objectSetKey(obj: unknown, key: Key): void {
   if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {
     throw new TypeError("Only objects can have the datastore key set.");
   }
