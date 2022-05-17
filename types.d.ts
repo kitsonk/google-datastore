@@ -475,15 +475,15 @@ export interface Query {
 /** A batch of results produced by a query. */
 export interface QueryResultBatch {
   /** A cursor that points to the position after the last result in the batch. */
-  endCursor?: string;
+  endCursor: string;
   /** The result type for every entity in `entity_results`. */
-  entityResultType?:
+  entityResultType:
     | "RESULT_TYPE_UNSPECIFIED"
     | "FULL"
     | "PROJECTION"
     | "KEY_ONLY";
   /** The results for this batch. */
-  entityResults: EntityResult[];
+  entityResults?: EntityResult[];
   /** The state of the query after the current batch. */
   moreResults:
     | "MORE_RESULTS_TYPE_UNSPECIFIED"
@@ -507,7 +507,7 @@ export interface QueryResultBatch {
    * is valid for all preceding batches.
    *
    * The value will be zero for eventually consistent queries. */
-  snapshotVersion?: string;
+  snapshotVersion: string;
 }
 
 /** Options specific to read-only transactions. */
