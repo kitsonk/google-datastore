@@ -711,7 +711,9 @@ function stringAsInteger(value: string): number | bigint {
 /** Convert a Datastore {@linkcode Value} to a JavaScript value. */
 export function datastoreValueToValue(value: Value): unknown {
   if (isValueArray(value)) {
-    return value.arrayValue.values.map(datastoreValueToValue);
+    return value.arrayValue.values
+      ? value.arrayValue.values.map(datastoreValueToValue)
+      : [];
   }
   if (isValueBlob(value)) {
     return base64.decode(value.blobValue);
@@ -817,6 +819,8 @@ function hasToEntity<T>(value: T): value is T & { [toEntity](): Entity } {
   return value !== null && typeof value === "object" && toEntity in value;
 }
 
+const encoder = new TextEncoder();
+
 function toValue(value: unknown): Value | undefined {
   switch (typeof value) {
     case "bigint":
@@ -836,15 +840,23 @@ function toValue(value: unknown): Value | undefined {
         return { nullValue: "NULL_VALUE" };
       }
       if (ArrayBuffer.isView(value)) {
-        return { blobValue: base64.encode(value.buffer) };
+        if (value.byteLength >= 1_000_000) {
+          throw new TypeError(
+            "Array buffer exceeds 1,000,000 bytes, which is unsupported.",
+          );
+        }
+        return {
+          blobValue: base64.encode(value.buffer),
+          excludeFromIndexes: true,
+        };
       }
       if (value instanceof Blob) {
-        throw TypeError(
+        throw new TypeError(
           "Blob's cannot be serialized into Datastore values. Use an ArrayBuffer directly instead.",
         );
       }
       if (value instanceof ReadableStream) {
-        throw TypeError(
+        throw new TypeError(
           "ReadableStream's cannot be serialized into Datastore values.",
         );
       }
@@ -869,7 +881,9 @@ function toValue(value: unknown): Value | undefined {
       }
       return { entityValue: objectToEntity(value) };
     case "string":
-      return { stringValue: value };
+      return encoder.encode(value).length >= 1500
+        ? { stringValue: value, excludeFromIndexes: true }
+        : { stringValue: value };
     case "function":
     case "symbol":
     case "undefined":

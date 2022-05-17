@@ -13,7 +13,7 @@ export interface ArrayValue {
    *
    * The order of values in an array is preserved as long as all values have
    * identical settings for 'exclude_from_indexes'. */
-  values: Value[];
+  values?: Value[];
 }
 
 /** The request for Datastore.Commit. */
@@ -594,8 +594,10 @@ export interface ValueBase {
 }
 
 export interface ValueArray extends ValueBase {
-  /** An array value. Cannot contain another array value. A `Value` instance
-   * that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`. */
+  /** An array value.
+   *
+   * Cannot contain another array value. A `Value` instance that sets field
+   * `array_value` must not set fields `meaning` or `exclude_from_indexes`. */
   arrayValue: ArrayValue;
 }
 
