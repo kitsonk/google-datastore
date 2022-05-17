@@ -137,7 +137,7 @@ function optionsToQueryString<O extends object>(options?: O): string {
     : "";
 }
 
-class DatastoreIndexes {
+export class DatastoreIndexes {
   #auth: Auth;
 
   constructor(auth: Auth) {
@@ -267,7 +267,7 @@ class DatastoreIndexes {
   }
 }
 
-class DatastoreOperations {
+export class DatastoreOperations {
   #auth: Auth;
 
   constructor(auth: Auth) {
