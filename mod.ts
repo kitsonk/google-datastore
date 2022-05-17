@@ -3,9 +3,20 @@
 /** APIs for using [Google Datastore](https://cloud.google.com/datastore) from
  * Deno.
  *
- * Google Datastore is Firestore in Datastore more under the hood these days,
- * but has a more concise API and lacks the complex rule system that Firestore
- * running in its native mode provides.
+ * Google Datastore is Firestore in Datastore under the hood these days, but has
+ * a more concise API and lacks the complex rule system that Firestore running
+ * in its native mode provides.
+ *
+ * Users should create an instance of {@linkcode Datastore} to connect to an
+ * instance of Google Datastore. Converting a datastore {@linkcode Entity} to
+ * a JavaScript object can be done with {@linkcode entityToObject} and a
+ * JavaScript object can be converted to an {@linkcode Entity} via
+ * {@linkcode objectToEntity}.
+ *
+ * You can associate a datastore {@linkcode Key} with a JavaScript object via
+ * the {@linkcode objectSetKey} function. Any entities that were converted to
+ * objects with {@linkcode entityToObject} will already have their key set, so
+ * can be mutated and then converted back to an entity and not lose their key.
  *
  * @module
  */
@@ -46,6 +57,8 @@ import type {
 } from "./types.d.ts";
 import { createOAuth2Token, type OAuth2Token } from "./auth.ts";
 
+/** The information from a service account JSON file that is used by the
+ * {@linkcode Datastore} to be able to securely connect. */
 export interface DatastoreInit {
   client_email: string;
   private_key: string;
@@ -53,12 +66,15 @@ export interface DatastoreInit {
   project_id: string;
 }
 
+/** Options that can be set when creating a {@linkcode DatastoreError}. */
 export interface DatastoreErrorOptions extends ErrorOptions {
   status?: number;
   statusInfo?: unknown;
   statusText?: string;
 }
 
+/** Errors using {@linkcode Datastore} will by of this type, which includes
+ * extra info about the error. */
 export class DatastoreError extends Error {
   #status?: number;
   #statusInfo?: unknown;
@@ -137,6 +153,10 @@ function optionsToQueryString<O extends object>(options?: O): string {
     : "";
 }
 
+/** Provides the APIs for `indexes` for {@linkcode Datastore} instances.
+ * Exported for documentation purposes and should not be instantiated by users.
+ *
+ * @private */
 export class DatastoreIndexes {
   #auth: Auth;
 
@@ -267,6 +287,10 @@ export class DatastoreIndexes {
   }
 }
 
+/** Provides the `operations` APIs on the {@linkcode Datastore} instances.
+ * Exported for documentation purposes and should not be instantiated by users.
+ *
+ * @private */
 export class DatastoreOperations {
   #auth: Auth;
 
@@ -383,7 +407,8 @@ export class DatastoreOperations {
   }
 }
 
-/** An interface to [Google Datastore](https://cloud.google.com/datastore).
+/** An interface to [Google Datastore](https://cloud.google.com/datastore). This
+ * is the main class users should use to connect to a Google Datastore instance.
  *
  * ### Example
  *
