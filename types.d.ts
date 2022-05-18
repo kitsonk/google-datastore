@@ -529,14 +529,6 @@ export interface ReadWrite {
   previousTransaction?: string;
 }
 
-/** The response for Datastore.RunQuery. */
-export interface RunQueryResponse {
-  /** A batch of query results (always present). */
-  batch: QueryResultBatch;
-  /** The parsed form of the `GqlQuery` from the request, if it was set. */
-  query?: Query;
-}
-
 /** The request for Datastore.ReserveIds. */
 export interface ReserveIdsRequest {
   /** If not empty, the ID of the database against which to make the request. */
@@ -544,6 +536,14 @@ export interface ReserveIdsRequest {
   /** Required. A list of keys with complete key paths whose numeric IDs should
    * not be auto-allocated. */
   keys: Key[];
+}
+
+/** The response for Datastore.RunQuery. */
+export interface RunQueryResponse {
+  /** A batch of query results (always present). */
+  batch: QueryResultBatch;
+  /** The parsed form of the `GqlQuery` from the request, if it was set. */
+  query?: Query;
 }
 
 /** The request for Datastore.RunQuery. */

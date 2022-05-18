@@ -22,6 +22,21 @@
  */
 
 import * as base64 from "https://deno.land/std@0.139.0/encoding/base64.ts";
+import { createOAuth2Token, type OAuth2Token } from "./auth.ts";
+import {
+  isValueArray,
+  isValueBlob,
+  isValueBoolean,
+  isValueDouble,
+  isValueEntity,
+  isValueGeoPoint,
+  isValueInteger,
+  isValueKey,
+  isValueNull,
+  isValueString,
+  isValueTimestamp,
+} from "./guards.ts";
+import { getQueryRequest, Query, type QueryRequestGenerator } from "./query.ts";
 import type {
   CommitRequest,
   CommitResponse,
@@ -33,29 +48,18 @@ import type {
   GoogleLongrunningOperation,
   GqlQuery,
   Key,
-  LatLng,
   LookupRequest,
   LookupResponse,
   Mutation,
-  Query,
+  PathElement,
   ReadOptions,
   ReserveIdsRequest,
   RunQueryResponse,
   TransactionOptions,
   Value,
-  ValueArray,
-  ValueBlob,
-  ValueBoolean,
-  ValueDouble,
-  ValueEntity,
-  ValueGeoPoint,
-  ValueInteger,
-  ValueKey,
-  ValueNull,
-  ValueString,
-  ValueTimestamp,
 } from "./types.d.ts";
-import { createOAuth2Token, type OAuth2Token } from "./auth.ts";
+import { datastoreKey } from "./util.ts";
+export { objectToEntity, toEntity } from "./util.ts";
 
 /** The information from a service account JSON file that is used by the
  * {@linkcode Datastore} to be able to securely connect. */
@@ -407,6 +411,35 @@ export class DatastoreOperations {
   }
 }
 
+interface KeyInitObject {
+  namespace: string;
+  path: [string, number | bigint | string][];
+}
+
+function isKeyInitObject(value: unknown): value is KeyInitObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export type KeyInit =
+  | [string, string | number | bigint]
+  | string
+  | KeyInitObject;
+
+function tupleToPathElement(
+  tuple: [string, string | number | bigint],
+): PathElement {
+  const [kind, nameOrId] = tuple;
+  if (typeof nameOrId === "string") {
+    return { kind, name: nameOrId };
+  }
+  return {
+    kind,
+    id: typeof nameOrId === "bigint"
+      ? nameOrId.toString()
+      : String(nameOrId.toFixed()),
+  };
+}
+
 /** An interface to [Google Datastore](https://cloud.google.com/datastore). This
  * is the main class users should use to connect to a Google Datastore instance.
  *
@@ -527,6 +560,57 @@ export class Datastore {
     return res.json();
   }
 
+  /** Create a query. */
+  createQuery(kind?: string | string[]): Query;
+  createQuery(namespace: string, kind: string | string[]): Query;
+  createQuery(
+    namespaceOrKind?: string | string[],
+    kind?: string | string[],
+  ): Query {
+    let namespaceId;
+    if (kind) {
+      if (Array.isArray(namespaceOrKind)) {
+        throw new TypeError("Namespace must be a string.");
+      }
+      namespaceId = namespaceOrKind;
+    } else {
+      kind = namespaceOrKind;
+    }
+    return new Query(
+      kind,
+      namespaceId
+        ? {
+          projectId: this.#auth.init.project_id,
+          namespaceId,
+        }
+        : undefined,
+    );
+  }
+
+  /** Generate a key. */
+  key(...keyInit: KeyInit[]): Key {
+    const [keyInitObject] = keyInit;
+    if (isKeyInitObject(keyInitObject)) {
+      if (keyInit.length > 1) {
+        throw new TypeError("Only one key init object can be passed.");
+      }
+      return {
+        partitionId: {
+          projectId: this.#auth.init.project_id,
+          namespaceId: keyInitObject.namespace,
+        },
+        path: keyInitObject.path.map(tupleToPathElement),
+      };
+    }
+    return {
+      path: keyInit.map((kindOrTuple) =>
+        Array.isArray(kindOrTuple)
+          ? tupleToPathElement(kindOrTuple)
+          : { kind: kindOrTuple as string }
+      ),
+    };
+  }
+
   /** Looks up entities by key. */
   async lookup(
     keys: Key[],
@@ -606,18 +690,17 @@ export class Datastore {
   }
 
   /** Queries for entities. */
-  async runQuery(query: Query): Promise<RunQueryResponse> {
+  async runQuery(
+    query: Query | QueryRequestGenerator,
+  ): Promise<RunQueryResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
     }
+    const body = JSON.stringify(query[getQueryRequest]());
     const res = await fetch(
       `${Datastore.API_ROOT}${this.#auth.init.project_id}:runQuery`,
-      {
-        method: "POST",
-        body: JSON.stringify({ query }),
-        headers: getRequestHeaders(token),
-      },
+      { method: "POST", body, headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
       throw new DatastoreError(`Query error: ${res.statusText}`, {
@@ -657,50 +740,6 @@ export class Datastore {
   static readonly API_ROOT = "https://datastore.googleapis.com/v1/projects/";
   /** The scopes provided when obtaining an API token. */
   static readonly SCOPES = "https://www.googleapis.com/auth/datastore";
-}
-
-function isValueArray(value: Value): value is ValueArray {
-  return "arrayValue" in value;
-}
-
-function isValueBlob(value: Value): value is ValueBlob {
-  return "blobValue" in value;
-}
-
-function isValueBoolean(value: Value): value is ValueBoolean {
-  return "booleanValue" in value;
-}
-
-function isValueDouble(value: Value): value is ValueDouble {
-  return "doubleValue" in value;
-}
-
-function isValueEntity(value: Value): value is ValueEntity {
-  return "entityValue" in value;
-}
-
-function isValueGeoPoint(value: Value): value is ValueGeoPoint {
-  return "geoPointValue" in value;
-}
-
-function isValueInteger(value: Value): value is ValueInteger {
-  return "integerValue" in value;
-}
-
-function isValueKey(value: Value): value is ValueKey {
-  return "keyValue" in value;
-}
-
-function isValueNull(value: Value): value is ValueNull {
-  return "nullValue" in value;
-}
-
-function isValueString(value: Value): value is ValueString {
-  return "stringValue" in value;
-}
-
-function isValueTimestamp(value: Value): value is ValueTimestamp {
-  return "timestampValue" in value;
 }
 
 function stringAsInteger(value: string): number | bigint {
@@ -747,8 +786,6 @@ export function datastoreValueToValue(value: Value): unknown {
   }
 }
 
-const datastoreKey = Symbol.for("google.datastore.key");
-
 interface EntityMetaData {
   [datastoreKey]: Key;
 }
@@ -768,152 +805,6 @@ export function entityToObject<O>(entity: Entity): O & EntityMetaData {
     configurable: true,
   });
   return o as O & EntityMetaData;
-}
-
-function isKey(value: unknown): value is Key {
-  return value !== null && typeof value === "object" && "path" in value &&
-    // deno-lint-ignore no-explicit-any
-    Array.isArray((value as any).path) &&
-    // deno-lint-ignore no-explicit-any
-    (value as any).path.length >= 1;
-}
-
-function isLatLng(value: unknown): value is LatLng {
-  return value !== null && typeof value === "object" && "latitude" in value &&
-    "longitude" in value;
-}
-
-// deno-lint-ignore no-explicit-any
-function isSerializeable(value: unknown): value is { toJSON(): any } {
-  return value !== null && typeof value === "object" && "toJSON" in value;
-}
-
-/** A symbol which can be used to provide a custom method to generate an
- * {@linkcode Entity} serialization for an object.  When performing
- * {@linkcode objectToEntity}, this method will be used instead of built in
- * serialization of objects to entities.
- *
- * ### Example
- *
- * ```ts
- * import { toEntity } from "google_datastore.ts";
- *
- * class A {
- *   a = "value";
- *   id = "a";
- *
- *   [toEntity]() {
- *     return {
- *       key: { path: [ { id: this.id, kind: A.KIND } ] },
- *       properties: { a: { stringValue: this.a }},
- *     }
- *   }
- *
- *   static KIND = "A";
- * }
- * ```
- */
-export const toEntity = Symbol.for("google.datastore.toEntity");
-
-function hasToEntity<T>(value: T): value is T & { [toEntity](): Entity } {
-  return value !== null && typeof value === "object" && toEntity in value;
-}
-
-const encoder = new TextEncoder();
-
-function toValue(value: unknown): Value | undefined {
-  switch (typeof value) {
-    case "bigint":
-      return { integerValue: value.toString(10) };
-    case "boolean":
-      return { booleanValue: value };
-    case "number":
-      if (Number.isNaN(value) || !Number.isFinite(value)) {
-        return { nullValue: "NULL_VALUE" };
-      }
-      if (Number.isInteger(value)) {
-        return { integerValue: value.toString(10) };
-      }
-      return { doubleValue: value };
-    case "object":
-      if (value === null) {
-        return { nullValue: "NULL_VALUE" };
-      }
-      if (ArrayBuffer.isView(value)) {
-        if (value.byteLength >= 1_000_000) {
-          throw new TypeError(
-            "Array buffer exceeds 1,000,000 bytes, which is unsupported.",
-          );
-        }
-        return {
-          blobValue: base64.encode(value.buffer),
-          excludeFromIndexes: true,
-        };
-      }
-      if (value instanceof Blob) {
-        throw new TypeError(
-          "Blob's cannot be serialized into Datastore values. Use an ArrayBuffer directly instead.",
-        );
-      }
-      if (value instanceof ReadableStream) {
-        throw new TypeError(
-          "ReadableStream's cannot be serialized into Datastore values.",
-        );
-      }
-      if (value instanceof Date) {
-        return { timestampValue: value.toISOString() };
-      }
-      if (Array.isArray(value)) {
-        return {
-          arrayValue: {
-            values: value.map(toValue).filter((value) => !!value) as Value[],
-          },
-        };
-      }
-      if (isKey(value)) {
-        return { keyValue: value };
-      }
-      if (isLatLng(value)) {
-        return { geoPointValue: value };
-      }
-      if (isSerializeable(value)) {
-        return toValue(value.toJSON());
-      }
-      return { entityValue: objectToEntity(value) };
-    case "string":
-      return encoder.encode(value).length >= 1500
-        ? { stringValue: value, excludeFromIndexes: true }
-        : { stringValue: value };
-    case "function":
-    case "symbol":
-    case "undefined":
-      return undefined;
-  }
-}
-
-/** A function which converts most JavaScript objects to entities that can be
- * stored in Google Datastore. If the object as a {@linkcode toEntity} symbol
- * method, it will be used to serialize the entity. */
-// deno-lint-ignore no-explicit-any
-export function objectToEntity(obj: any): Entity {
-  if (hasToEntity(obj)) {
-    return obj.toEntity();
-  }
-  if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {
-    throw new TypeError("Only objects can be converted to entities");
-  }
-  const properties: Record<string, Value> = Object.create(null);
-  for (const [key, value] of Object.entries(obj)) {
-    if (key.match(/^__.*__$/)) {
-      throw new TypeError("Entity property keys cannot match __.*__.");
-    }
-    const propertyValue = toValue(value);
-    if (propertyValue) {
-      properties[key] = propertyValue;
-    }
-  }
-  const key: Key | undefined = obj[datastoreKey];
-  return key ? { key, properties } : { properties };
 }
 
 /** Assign a datastore {@linkcode Key} to a JavaScript object. This key will

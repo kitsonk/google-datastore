@@ -42,7 +42,7 @@ Deno.test({
         b: { booleanValue: true },
         d: { timestampValue: d.toISOString() },
         t: { stringValue: "t" },
-        u: { blobValue: "AQIDBA==" },
+        u: { blobValue: "AQIDBA==", excludeFromIndexes: true },
       },
     });
   },
