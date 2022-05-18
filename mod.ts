@@ -613,13 +613,14 @@ export class Datastore {
 
   /** Looks up entities by key. */
   async lookup(
-    keys: Key[],
+    keys: Key | Key[],
     readOptions?: ReadOptions,
   ): Promise<LookupResponse> {
     let token = this.#auth.token;
     if (!token || token.expired) {
       token = await this.#auth.setToken();
     }
+    keys = Array.isArray(keys) ? keys : [keys];
     const body: LookupRequest = readOptions ? { keys, readOptions } : { keys };
     const res = await fetch(
       `${Datastore.API_ROOT}${this.#auth.init.project_id}:lookup`,
