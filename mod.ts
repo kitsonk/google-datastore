@@ -24,6 +24,7 @@
 import { Auth } from "./auth.ts";
 import { base64 } from "./deps.ts";
 import { DatastoreError } from "./error.ts";
+export { DatastoreError } from "./error.ts";
 import {
   isValueArray,
   isValueBlob,
