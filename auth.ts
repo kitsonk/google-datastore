@@ -1,4 +1,5 @@
 import { importPKCS8, SignJWT } from "https://deno.land/x/jose@v4.8.1/index.ts";
+import { DatastoreError } from "./error.ts";
 
 // jose uses this and it isn't available under the built in libs in TypeScript
 declare global {
@@ -145,4 +146,36 @@ export async function createCustomToken(
     .setIssuedAt()
     .setExpirationTime("1h")
     .sign(key);
+}
+
+interface AuthInit {
+  client_email: string;
+  private_key: string;
+  private_key_id: string;
+  project_id: string;
+}
+
+export class Auth {
+  init: AuthInit;
+  token?: OAuth2Token;
+  scopes: string;
+
+  constructor(init: AuthInit, scopes: string) {
+    this.init = init;
+    this.scopes = scopes;
+  }
+
+  async setToken(): Promise<OAuth2Token> {
+    try {
+      this.token = await createOAuth2Token(this.init, this.scopes);
+      return this.token;
+    } catch (cause) {
+      throw new DatastoreError(
+        `Error setting token: ${
+          cause instanceof Error ? cause.message : "Unknown"
+        }`,
+        { cause },
+      );
+    }
+  }
 }

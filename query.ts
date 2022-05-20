@@ -4,16 +4,22 @@
  *
  * @module
  */
+
+import { type Auth } from "./auth.ts";
 import { base64 } from "./deps.ts";
+import { DatastoreError } from "./error.ts";
 import type {
+  Entity,
   Filter,
   Key,
   PartitionId,
   PropertyFilter,
   PropertyOrder,
+  QueryResultBatch,
   RunQueryRequest,
+  RunQueryResponse,
 } from "./types.d.ts";
-import { assert, toValue } from "./util.ts";
+import { assert, getRequestHeaders, toValue } from "./util.ts";
 
 export const getQueryRequest = Symbol.for("google.datastore.getQueryRequest");
 
@@ -226,4 +232,63 @@ export class Query implements QueryRequestGenerator {
     }
     return request;
   }
+}
+
+export interface RunQueryOptions {
+  query: QueryRequestGenerator;
+  apiUrl: string;
+  auth: Auth;
+}
+
+function enqueueBatch(
+  controller: ReadableStreamDefaultController<Entity>,
+  batch: QueryResultBatch,
+): string | undefined {
+  if (!batch.entityResults) {
+    return;
+  }
+  for (const { entity } of batch.entityResults) {
+    controller.enqueue(entity);
+  }
+  if (batch.moreResults === "NOT_FINISHED") {
+    return batch.endCursor;
+  }
+}
+
+export function asStream(
+  { query, apiUrl, auth }: RunQueryOptions,
+): ReadableStream<Entity> {
+  const stream = new ReadableStream({
+    async start(controller) {
+      let more: string | undefined;
+      do {
+        let token = auth.token;
+        if (!token || token.expired) {
+          token = await auth.setToken();
+        }
+        const q = query[getQueryRequest]();
+        if (more && q.query && !(q.query.startCursor)) {
+          q.query.startCursor = more;
+        }
+        const body = JSON.stringify(q);
+        const res = await fetch(
+          `${apiUrl}${auth.init.project_id}:runQuery`,
+          { method: "POST", body, headers: getRequestHeaders(token) },
+        );
+        if (res.status !== 200) {
+          controller.error(
+            new DatastoreError(`Query error: ${res.statusText}`, {
+              status: res.status,
+              statusText: res.statusText,
+              statusInfo: await res.json(),
+            }),
+          );
+        }
+        const queryResponse: RunQueryResponse = await res.json();
+        more = enqueueBatch(controller, queryResponse.batch);
+      } while (more);
+      controller.close();
+    },
+  });
+  return stream;
 }

@@ -21,8 +21,9 @@
  * @module
  */
 
-import * as base64 from "https://deno.land/std@0.139.0/encoding/base64.ts";
-import { createOAuth2Token, type OAuth2Token } from "./auth.ts";
+import { Auth } from "./auth.ts";
+import { base64 } from "./deps.ts";
+import { DatastoreError } from "./error.ts";
 import {
   isValueArray,
   isValueBlob,
@@ -36,7 +37,12 @@ import {
   isValueString,
   isValueTimestamp,
 } from "./guards.ts";
-import { getQueryRequest, Query, type QueryRequestGenerator } from "./query.ts";
+import {
+  asStream,
+  getQueryRequest,
+  Query,
+  type QueryRequestGenerator,
+} from "./query.ts";
 import type {
   CommitRequest,
   CommitResponse,
@@ -58,7 +64,7 @@ import type {
   TransactionOptions,
   Value,
 } from "./types.d.ts";
-import { datastoreKey } from "./util.ts";
+import { datastoreKey, getRequestHeaders } from "./util.ts";
 export { objectToEntity, toEntity } from "./util.ts";
 
 /** The information from a service account JSON file that is used by the
@@ -70,84 +76,12 @@ export interface DatastoreInit {
   project_id: string;
 }
 
-/** Options that can be set when creating a {@linkcode DatastoreError}. */
-export interface DatastoreErrorOptions extends ErrorOptions {
-  status?: number;
-  statusInfo?: unknown;
-  statusText?: string;
-}
-
-/** Errors using {@linkcode Datastore} will by of this type, which includes
- * extra info about the error. */
-export class DatastoreError extends Error {
-  #status?: number;
-  #statusInfo?: unknown;
-  #statusText?: string;
-
-  /** If the error was created as a result of a REST request, the status code
-   * will be reflected here.
-   */
-  get status(): number | undefined {
-    return this.#status;
-  }
-
-  /** If the error was created as a result of a REST request, the body of the
-   * response will be set here. */
-  get statusInfo(): unknown {
-    return this.#statusInfo;
-  }
-
-  /** If the error was created as a result of a REST request, the status
-   * text will be reflected here. */
-  get statusText(): string | undefined {
-    return this.#statusText;
-  }
-
-  constructor(message?: string, options: DatastoreErrorOptions = {}) {
-    super(message, options);
-    this.#status = options.status;
-    this.#statusText = options.statusText;
-    this.#statusInfo = options.statusInfo;
-  }
-}
-
-class Auth {
-  init: DatastoreInit;
-  token?: OAuth2Token;
-
-  constructor(init: DatastoreInit) {
-    this.init = init;
-  }
-
-  async setToken(): Promise<OAuth2Token> {
-    try {
-      this.token = await createOAuth2Token(this.init, Datastore.SCOPES);
-      return this.token;
-    } catch (cause) {
-      throw new DatastoreError(
-        `Error setting token: ${
-          cause instanceof Error ? cause.message : "Unknown"
-        }`,
-        { cause },
-      );
-    }
-  }
-}
-
 interface ListOptions {
   filter?: string;
   /** The maximum number of items to return. If zero, then all results will be returned. */
   pageSize?: number;
   /** The next_page_token value returned from a previous List request, if any. */
   pageToken?: string;
-}
-
-function getRequestHeaders(token: OAuth2Token): Headers {
-  return new Headers({
-    "accept": "application/json",
-    "authorization": token.toString(),
-    "content-type": "application/json",
-  });
 }
 
 // deno-lint-ignore ban-types
@@ -470,7 +404,7 @@ export class Datastore {
   }
 
   constructor(datastoreInit: DatastoreInit) {
-    this.#auth = new Auth(datastoreInit);
+    this.#auth = new Auth(datastoreInit, Datastore.SCOPES);
     this.#indexes = new DatastoreIndexes(this.#auth);
     this.#operations = new DatastoreOperations(this.#auth);
   }
@@ -735,6 +669,11 @@ export class Datastore {
       });
     }
     return res.json();
+  }
+
+  /** Perform a query and return the entities as a stream. */
+  streamQuery(query: Query | QueryRequestGenerator): ReadableStream<Entity> {
+    return asStream({ query, apiUrl: Datastore.API_ROOT, auth: this.#auth });
   }
 
   /** The root of the API endpoint. Used when forming request URLs. */

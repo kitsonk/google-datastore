@@ -1,3 +1,4 @@
+import { OAuth2Token } from "./auth.ts";
 import { base64 } from "./deps.ts";
 import { isKey, isLatLng } from "./guards.ts";
 import type { Entity, Key, Value } from "./types.d.ts";
@@ -39,6 +40,14 @@ export function assert(
   if (!cond) {
     throw new Error(message);
   }
+}
+
+export function getRequestHeaders(token: OAuth2Token): Headers {
+  return new Headers({
+    "accept": "application/json",
+    "authorization": token.toString(),
+    "content-type": "application/json",
+  });
 }
 
 function hasToEntity<T>(value: T): value is T & { [toEntity](): Entity } {
