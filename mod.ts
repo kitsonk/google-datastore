@@ -77,6 +77,17 @@ export interface DatastoreInit {
   project_id: string;
 }
 
+/** Options that can be used when committing mutations to the datastore. */
+export interface CommitOptions {
+  /** The number of mutations that will be set per batch. Defaults to 500, must
+   * be between 1 and 500. */
+  batchSize?: number;
+  /** Indicates if the commit is transactional or not. Defaults to `true`. */
+  transactional?: boolean;
+  /** The associated transaction to use when committing. */
+  transaction?: string;
+}
+
 interface ListOptions {
   filter?: string;
   /** The maximum number of items to return. If zero, then all results will be returned. */
@@ -462,37 +473,56 @@ export class Datastore {
   }
 
   /** Commits a transaction, optionally creating, deleting or modifying some
-   * entities. */
-  async commit(
+   * entities.
+   *
+   * An async iterable that yields up each commit response for each batch
+   * of mutations being sent. */
+  async *commit(
     mutations: Mutation[],
-    transactional = true,
-    transaction?: string,
-  ): Promise<CommitResponse> {
-    let token = this.#auth.token;
-    if (!token || token.expired) {
-      token = await this.#auth.setToken();
+    options: CommitOptions = {},
+  ): AsyncIterableIterator<CommitResponse> {
+    const { batchSize = 500, transactional = true, transaction } = options;
+    if (batchSize < 1 || batchSize > 500) {
+      throw new TypeError(
+        `Batch size must be between 1 and 500. Received ${batchSize}.`,
+      );
     }
-    const body: CommitRequest = {
-      mode: transactional ? "TRANSACTIONAL" : "NON_TRANSACTIONAL",
-      mutations,
-      transaction,
-    };
-    const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:commit`,
-      {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: getRequestHeaders(token),
-      },
-    );
-    if (res.status !== 200) {
-      throw new DatastoreError(`Commit error: ${res.statusText}`, {
-        status: res.status,
-        statusText: res.statusText,
-        statusInfo: await res.json(),
-      });
+    let m = mutations.slice(0);
+    while (m.length) {
+      let current: Mutation[];
+      if (m.length > batchSize) {
+        current = m.slice(0, batchSize);
+        m = m.slice(batchSize);
+      } else {
+        current = m;
+        m = [];
+      }
+      let token = this.#auth.token;
+      if (!token || token.expired) {
+        token = await this.#auth.setToken();
+      }
+      const body: CommitRequest = {
+        mode: transactional ? "TRANSACTIONAL" : "NON_TRANSACTIONAL",
+        mutations: current,
+        transaction,
+      };
+      const res = await fetch(
+        `${Datastore.API_ROOT}${this.#auth.init.project_id}:commit`,
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+          headers: getRequestHeaders(token),
+        },
+      );
+      if (res.status !== 200) {
+        throw new DatastoreError(`Commit error: ${res.statusText}`, {
+          status: res.status,
+          statusText: res.statusText,
+          statusInfo: await res.json(),
+        });
+      }
+      yield res.json();
     }
-    return res.json();
   }
 
   /** Create a query. */
