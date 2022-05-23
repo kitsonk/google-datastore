@@ -766,15 +766,19 @@ interface EntityMetaData {
 export function entityToObject<O>(entity: Entity): O & EntityMetaData {
   // deno-lint-ignore no-explicit-any
   const o: any = Object.create(null);
-  for (const [key, value] of Object.entries(entity.properties)) {
-    o[key] = datastoreValueToValue(value);
+  if (entity.properties) {
+    for (const [key, value] of Object.entries(entity.properties)) {
+      o[key] = datastoreValueToValue(value);
+    }
   }
-  Object.defineProperty(o, datastoreKey, {
-    value: entity.key,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-  });
+  if (entity.key) {
+    Object.defineProperty(o, datastoreKey, {
+      value: entity.key,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+    });
+  }
   return o as O & EntityMetaData;
 }
 

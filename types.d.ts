@@ -56,7 +56,7 @@ export interface Entity {
    * name matching regex `__.*__` is reserved. A reserved property name is
    * forbidden in certain documented contexts. The name must not contain more
    * than 500 characters. The name cannot be `""`. */
-  properties: Record<string, Value>;
+  properties?: Record<string, Value>;
 }
 
 /** The result of fetching an entity from Datastore. */
