@@ -782,6 +782,17 @@ export function entityToObject<O>(entity: Entity): O & EntityMetaData {
   return o as O & EntityMetaData;
 }
 
+/** A guard that determines if the object was parsed from an keyed
+ * {@linkcode Entity}, or if a key was set on the entity. */
+export function isObjectEntity<O>(obj: O): obj is O & EntityMetaData {
+  return obj !== null && typeof obj !== "object" && datastoreKey in obj;
+}
+
+/** Get the datastore {@linkcode Key} for an object, or return `undefined`. */
+export function objectGetKey(obj: unknown): Key | undefined {
+  return isObjectEntity(obj) ? obj[datastoreKey] : undefined;
+}
+
 /** Assign a datastore {@linkcode Key} to a JavaScript object. This key will
  * then be set in any resulting {@linkcode Entity}. */
 export function objectSetKey(obj: unknown, key: Key): void {
