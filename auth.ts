@@ -156,6 +156,7 @@ interface AuthInit {
 }
 
 export class Auth {
+  #tokenPromise: Promise<OAuth2Token> | undefined;
   init: AuthInit;
   token?: OAuth2Token;
   scopes: string;
@@ -166,8 +167,13 @@ export class Auth {
   }
 
   async setToken(): Promise<OAuth2Token> {
+    if (this.#tokenPromise) {
+      return this.#tokenPromise;
+    }
+    this.#tokenPromise = createOAuth2Token(this.init, this.scopes);
     try {
-      this.token = await createOAuth2Token(this.init, this.scopes);
+      this.token = await this.#tokenPromise;
+      this.#tokenPromise = undefined;
       return this.token;
     } catch (cause) {
       throw new DatastoreError(

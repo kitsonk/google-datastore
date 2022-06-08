@@ -417,6 +417,7 @@ export class Datastore {
 
   constructor(datastoreInit: DatastoreInit) {
     this.#auth = new Auth(datastoreInit, Datastore.SCOPES);
+    this.#auth.setToken();
     this.#indexes = new DatastoreIndexes(this.#auth);
     this.#operations = new DatastoreOperations(this.#auth);
   }
