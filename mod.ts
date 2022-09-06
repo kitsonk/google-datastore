@@ -606,6 +606,52 @@ export class Datastore {
     return res.json();
   }
 
+  /** Run a query and convert the return entities to objects, resolving with
+   * an array containing all the results.
+   *
+   * If an error occurs, the promise will be rejected with an instance of
+   * {@linkcode DatastoreError} containing more information about the error. */
+  async query<T>(
+    query: Query | QueryRequestGenerator,
+  ): Promise<(T & EntityMetaData)[]> {
+    const results: (T & EntityMetaData)[] = [];
+    let next: string | undefined;
+    do {
+      let token = this.#auth.token;
+      if (!token || token.expired) {
+        token = await this.#auth.setToken();
+      }
+      const q = query[getQueryRequest]();
+      if (next && q.query && !(q.query.startCursor)) {
+        q.query.startCursor = next;
+      }
+      const body = JSON.stringify(q);
+      const res = await fetch(
+        `${Datastore.API_ROOT}${this.#auth.init.project_id}:runQuery`,
+        { method: "POST", body, headers: getRequestHeaders(token) },
+      );
+      if (res.status !== 200) {
+        throw new DatastoreError(`Query error: ${res.statusText}`, {
+          status: res.status,
+          statusText: res.statusText,
+          statusInfo: await res.json(),
+        });
+      }
+      const { batch }: RunQueryResponse = await res.json();
+      if (!batch.entityResults) {
+        break;
+      }
+      for (const { entity } of batch.entityResults) {
+        results.push(entityToObject(entity));
+      }
+      next = undefined;
+      if (batch.moreResults === "NOT_FINISHED") {
+        next = batch.endCursor;
+      }
+    } while (next);
+    return results;
+  }
+
   /** Prevents the supplied keys' IDs from being auto-allocated by Cloud
    * Datastore. */
   async reserveIds(keys: Key[], databaseId?: string): Promise<void> {

@@ -1,6 +1,6 @@
 // Copyright 2022 Kitson P. Kelly. All rights reserved. MIT License
 
-import { assertEquals } from "https://deno.land/std@0.139.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.154.0/testing/asserts.ts";
 import { objectToEntity } from "./mod.ts";
 
 Deno.test({

@@ -1,4 +1,4 @@
-import { importPKCS8, SignJWT } from "https://deno.land/x/jose@v4.8.1/index.ts";
+import { importPKCS8, SignJWT } from "./deps.ts";
 import { DatastoreError } from "./error.ts";
 
 // jose uses this and it isn't available under the built in libs in TypeScript
