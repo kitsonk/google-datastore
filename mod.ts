@@ -44,6 +44,7 @@ import {
   Query,
   type QueryRequestGenerator,
 } from "./query.ts";
+export { Query, type QueryRequestGenerator } from "./query.ts";
 import type {
   CommitRequest,
   CommitResponse,
