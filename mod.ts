@@ -759,6 +759,24 @@ export class Datastore {
   static readonly API_ROOT = "https://datastore.googleapis.com/v1/projects/";
   /** The scopes provided when obtaining an API token. */
   static readonly SCOPES = "https://www.googleapis.com/auth/datastore";
+
+  /** Generate a key. */
+  static key(...keyInit: KeyInit[]): Key {
+    const [keyInitObject] = keyInit;
+    if (isKeyInitObject(keyInitObject)) {
+      if (keyInit.length > 1) {
+        throw new TypeError("Only one key init object can be passed.");
+      }
+      return { path: keyInitObject.path.map(tupleToPathElement) };
+    }
+    return {
+      path: keyInit.map((kindOrTuple) =>
+        Array.isArray(kindOrTuple)
+          ? tupleToPathElement(kindOrTuple)
+          : { kind: kindOrTuple as string }
+      ),
+    };
+  }
 }
 
 function stringAsInteger(value: string): number | bigint {
