@@ -751,7 +751,7 @@ export class Datastore {
     return res.json();
   }
 
-  /** Queries for entities. */
+  /** Queries for aggregations. */
   async runGqlAggregationQuery(
     gqlQuery: GqlQuery,
   ): Promise<RunAggregationQueryResponse> {
