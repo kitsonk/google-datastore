@@ -62,6 +62,7 @@ import type {
   PathElement,
   ReadOptions,
   ReserveIdsRequest,
+  RunAggregationQueryResponse,
   RunQueryResponse,
   TransactionOptions,
   Value,
@@ -734,6 +735,32 @@ export class Datastore {
     }
     const res = await fetch(
       `${Datastore.API_ROOT}${this.#auth.init.project_id}:runQuery`,
+      {
+        method: "POST",
+        body: JSON.stringify({ gqlQuery }),
+        headers: getRequestHeaders(token),
+      },
+    );
+    if (res.status !== 200) {
+      throw new DatastoreError(`Query error: ${res.statusText}`, {
+        status: res.status,
+        statusText: res.statusText,
+        statusInfo: await res.json(),
+      });
+    }
+    return res.json();
+  }
+
+  /** Queries for aggregations. */
+  async runGqlAggregationQuery(
+    gqlQuery: GqlQuery,
+  ): Promise<RunAggregationQueryResponse> {
+    let token = this.#auth.token;
+    if (!token || token.expired) {
+      token = await this.#auth.setToken();
+    }
+    const res = await fetch(
+      `${Datastore.API_ROOT}${this.#auth.init.project_id}:runAggregationQuery`,
       {
         method: "POST",
         body: JSON.stringify({ gqlQuery }),

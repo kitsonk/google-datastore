@@ -472,6 +472,13 @@ export interface Query {
   startCursor?: string;
 }
 
+export type MoreResults =
+  | "MORE_RESULTS_TYPE_UNSPECIFIED"
+  | "NOT_FINISHED"
+  | "MORE_RESULTS_AFTER_LIMIT"
+  | "MORE_RESULTS_AFTER_CURSOR"
+  | "NO_MORE_RESULTS";
+
 /** A batch of results produced by a query. */
 export interface QueryResultBatch {
   /** A cursor that points to the position after the last result in the batch. */
@@ -485,12 +492,7 @@ export interface QueryResultBatch {
   /** The results for this batch. */
   entityResults?: EntityResult[];
   /** The state of the query after the current batch. */
-  moreResults:
-    | "MORE_RESULTS_TYPE_UNSPECIFIED"
-    | "NOT_FINISHED"
-    | "MORE_RESULTS_AFTER_LIMIT"
-    | "MORE_RESULTS_AFTER_CURSOR"
-    | "NO_MORE_RESULTS";
+  moreResults: MoreResults;
   /** A cursor that points to the position after the last skipped result. Will
    * be set when `skipped_results` != 0. */
   skippedCursor?: string;
@@ -508,6 +510,14 @@ export interface QueryResultBatch {
    *
    * The value will be zero for eventually consistent queries. */
   snapshotVersion: string;
+  /** Read timestamp this batch was returned from. This applies to the range of
+   * results from the query's `start_cursor` (or the beginning of the query if
+   * no cursor was given) to this batch's `end_cursor` (not the query's
+   * `end_cursor`). In a single transaction, subsequent query result batches for
+   * the same query can have a greater timestamp. Each batch's read timestamp is
+   * valid for all preceding batches. This value will not be set for eventually
+   * consistent queries in Cloud Datastore. */
+  readTime: string;
 }
 
 /** Options specific to read-only transactions. */
@@ -544,6 +554,38 @@ export interface RunQueryResponse {
   batch: QueryResultBatch;
   /** The parsed form of the `GqlQuery` from the request, if it was set. */
   query?: Query;
+}
+
+/** The response for Datastore.RunAggregationQuery. */
+export interface RunAggregationQueryResponse {
+  /** A batch of query results (always present). */
+  batch: AggregationResultBatch;
+  /** The parsed form of the `GqlQuery` from the request, if it was set. */
+  query?: Query;
+}
+
+export interface AggregationResultBatch {
+  /** Read timestamp this batch was returned from. In a single transaction,
+   * subsequent query result batches for the same query can have a greater
+   * timestamp. Each batch's read timestamp is valid for all preceding batches. */
+  readTime: string;
+  /** The state of the query after the current batch. Only COUNT(*) aggregations
+   * are supported in the initial launch. Therefore, expected result type is
+   * limited to `NO_MORE_RESULTS`. */
+  moreResults: MoreResults;
+  /** The aggregation results for this batch. */
+  aggregationResults: AggregationResult[];
+}
+
+/** The result of a single bucket from a Datastore aggregation query. The keys
+ * of `aggregate_properties` are the same for all results in an aggregation
+ * query, unlike entity queries which can have different fields present for
+ * each result. */
+export interface AggregationResult {
+  /** The result of the aggregation functions, ex: `COUNT(*) AS total_entities`.
+   * The key is the alias assigned to the aggregation function on input and the
+   * size of this map equals the number of aggregation functions in the query. */
+  aggregateProperties: Record<string, Value>;
 }
 
 /** The request for Datastore.RunQuery. */
