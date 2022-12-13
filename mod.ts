@@ -775,7 +775,7 @@ export class Datastore {
 
   /** Perform a query and return the entities as a stream. */
   streamQuery(query: Query | QueryRequestGenerator): ReadableStream<Entity> {
-    return asStream({ query, apiUrl: this.API_ROOT, auth: this.#auth });
+    return asStream({ query, auth: this.#auth });
   }
 
   /** The scopes provided when obtaining an API token. */
