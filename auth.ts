@@ -153,6 +153,7 @@ interface AuthInit {
   private_key: string;
   private_key_id: string;
   project_id: string;
+  datastore_host?: string;
 }
 
 export class Auth {
@@ -160,10 +161,16 @@ export class Auth {
   init: AuthInit;
   token?: OAuth2Token;
   scopes: string;
+  host: string;
 
   constructor(init: AuthInit, scopes: string) {
     this.init = init;
     this.scopes = scopes;
+    this.host = init.datastore_host ?? "https://datastore.googleapis.com";
+  }
+
+  get baseEndpoint() {
+    return `${this.host}/v1/projects/${this.init.project_id}`;
   }
 
   async setToken(): Promise<OAuth2Token> {

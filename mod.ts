@@ -138,7 +138,7 @@ export class DatastoreIndexes {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/indexes`,
+      `${this.#auth.baseEndpoint}/indexes`,
       {
         method: "POST",
         body: JSON.stringify(index),
@@ -175,7 +175,7 @@ export class DatastoreIndexes {
     }
     const id = typeof indexId === "string" ? indexId : indexId.indexId;
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/indexes/${id}`,
+      `${this.#auth.baseEndpoint}/indexes/${id}`,
       { method: "DELETE", headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -198,7 +198,7 @@ export class DatastoreIndexes {
     }
     const id = typeof indexId === "string" ? indexId : indexId.indexId;
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/indexes/${id}`,
+      `${this.#auth.baseEndpoint}/indexes/${id}`,
       { method: "GET", headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -223,9 +223,7 @@ export class DatastoreIndexes {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/indexes${
-        optionsToQueryString(options)
-      }`,
+      `${this.#auth.baseEndpoint}/indexes${optionsToQueryString(options)}`,
       { method: "GET", headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -268,7 +266,7 @@ export class DatastoreOperations {
     }
     const operationsId = typeof name === "string" ? name : name.name;
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/operations/${operationsId}:cancel`,
+      `${this.#auth.baseEndpoint}/operations/${operationsId}:cancel`,
       { method: "POST", headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -294,7 +292,7 @@ export class DatastoreOperations {
     }
     const operationsId = typeof name === "string" ? name : name.name;
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/operations/${operationsId}`,
+      `${this.#auth.baseEndpoint}/operations/${operationsId}`,
       { method: "DELETE", headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -321,7 +319,7 @@ export class DatastoreOperations {
     }
     const operationsId = typeof name === "string" ? name : name.name;
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/operations/${operationsId}`,
+      `${this.#auth.baseEndpoint}/operations/${operationsId}`,
       { method: "GET", headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -343,9 +341,7 @@ export class DatastoreOperations {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}/operations${
-        optionsToQueryString(options)
-      }`,
+      `${this.#auth.baseEndpoint}/operations${optionsToQueryString(options)}`,
       { method: "GET", headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -432,7 +428,7 @@ export class Datastore {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:allocateIds`,
+      `${this.#auth.baseEndpoint}:allocateIds`,
       {
         method: "POST",
         body: JSON.stringify({ keys }),
@@ -458,7 +454,7 @@ export class Datastore {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:beginTransaction`,
+      `${this.#auth.baseEndpoint}:beginTransaction`,
       {
         method: "POST",
         body: JSON.stringify({ transactionOptions }),
@@ -510,7 +506,7 @@ export class Datastore {
         transaction,
       };
       const res = await fetch(
-        `${Datastore.API_ROOT}${this.#auth.init.project_id}:commit`,
+        `${this.#auth.baseEndpoint}:commit`,
         {
           method: "POST",
           body: JSON.stringify(body),
@@ -591,7 +587,7 @@ export class Datastore {
     keys = Array.isArray(keys) ? keys : [keys];
     const body: LookupRequest = readOptions ? { keys, readOptions } : { keys };
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:lookup`,
+      `${this.#auth.baseEndpoint}:lookup`,
       {
         method: "POST",
         body: JSON.stringify(body),
@@ -629,7 +625,7 @@ export class Datastore {
       }
       const body = JSON.stringify(q);
       const res = await fetch(
-        `${Datastore.API_ROOT}${this.#auth.init.project_id}:runQuery`,
+        `${this.#auth.baseEndpoint}:runQuery`,
         { method: "POST", body, headers: getRequestHeaders(token) },
       );
       if (res.status !== 200) {
@@ -665,7 +661,7 @@ export class Datastore {
       ? { databaseId, keys }
       : { keys };
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:reserveIds`,
+      `${this.#auth.baseEndpoint}:reserveIds`,
       {
         method: "POST",
         body: JSON.stringify(body),
@@ -688,7 +684,7 @@ export class Datastore {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:rollback`,
+      `${this.#auth.baseEndpoint}:rollback`,
       {
         method: "POST",
         body: JSON.stringify({ transaction }),
@@ -714,7 +710,7 @@ export class Datastore {
     }
     const body = JSON.stringify(query[getQueryRequest]());
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:runQuery`,
+      `${this.#auth.baseEndpoint}:runQuery`,
       { method: "POST", body, headers: getRequestHeaders(token) },
     );
     if (res.status !== 200) {
@@ -734,7 +730,7 @@ export class Datastore {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:runQuery`,
+      `${this.#auth.baseEndpoint}:runQuery`,
       {
         method: "POST",
         body: JSON.stringify({ gqlQuery }),
@@ -760,7 +756,7 @@ export class Datastore {
       token = await this.#auth.setToken();
     }
     const res = await fetch(
-      `${Datastore.API_ROOT}${this.#auth.init.project_id}:runAggregationQuery`,
+      `${this.#auth.baseEndpoint}:runAggregationQuery`,
       {
         method: "POST",
         body: JSON.stringify({ gqlQuery }),
@@ -779,11 +775,9 @@ export class Datastore {
 
   /** Perform a query and return the entities as a stream. */
   streamQuery(query: Query | QueryRequestGenerator): ReadableStream<Entity> {
-    return asStream({ query, apiUrl: Datastore.API_ROOT, auth: this.#auth });
+    return asStream({ query, auth: this.#auth });
   }
 
-  /** The root of the API endpoint. Used when forming request URLs. */
-  static readonly API_ROOT = "https://datastore.googleapis.com/v1/projects/";
   /** The scopes provided when obtaining an API token. */
   static readonly SCOPES = "https://www.googleapis.com/auth/datastore";
 

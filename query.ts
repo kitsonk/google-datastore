@@ -236,7 +236,6 @@ export class Query implements QueryRequestGenerator {
 
 export interface RunQueryOptions {
   query: QueryRequestGenerator;
-  apiUrl: string;
   auth: Auth;
 }
 
@@ -256,7 +255,7 @@ function enqueueBatch(
 }
 
 export function asStream(
-  { query, apiUrl, auth }: RunQueryOptions,
+  { query, auth }: RunQueryOptions,
 ): ReadableStream<Entity> {
   const stream = new ReadableStream({
     async start(controller) {
@@ -272,7 +271,7 @@ export function asStream(
         }
         const body = JSON.stringify(q);
         const res = await fetch(
-          `${apiUrl}${auth.init.project_id}:runQuery`,
+          `${auth.baseEndpoint}:runQuery`,
           { method: "POST", body, headers: getRequestHeaders(token) },
         );
         if (res.status !== 200) {
