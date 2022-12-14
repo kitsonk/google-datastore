@@ -166,7 +166,7 @@ export class Auth {
   constructor(init: AuthInit, scopes: string) {
     this.init = init;
     this.scopes = scopes;
-    this.host = init.datastore_host || "https://datastore.googleapis.com";
+    this.host = init.datastore_host ?? "https://datastore.googleapis.com";
   }
 
   get baseEndpoint() {
