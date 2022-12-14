@@ -42,12 +42,17 @@ export function assert(
   }
 }
 
-export function getRequestHeaders(token: OAuth2Token): Headers {
-  return new Headers({
+export function getRequestHeaders(token: OAuth2Token | undefined): Headers {
+  const headers = new Headers({
     "accept": "application/json",
-    "authorization": token.toString(),
     "content-type": "application/json",
   });
+
+  if (token) {
+    headers.set("authorization", token.toString());
+  }
+
+  return headers;
 }
 
 function hasToEntity<T>(value: T): value is T & { [toEntity](): Entity } {
