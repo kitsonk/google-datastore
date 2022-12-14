@@ -173,7 +173,10 @@ export class Auth {
     return `${this.host}/v1/projects/${this.init.project_id}`;
   }
 
-  async setToken(): Promise<OAuth2Token> {
+  async setToken(): Promise<OAuth2Token | undefined> {
+    if (this.init.datastore_host) {
+      return;
+    }
     if (this.#tokenPromise) {
       return this.#tokenPromise;
     }
