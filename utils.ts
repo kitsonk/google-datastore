@@ -1,17 +1,25 @@
-import { OAuth2Token } from "./auth.ts";
-import { base64 } from "./deps.ts";
-import { isKey, isLatLng } from "./guards.ts";
-import type { Entity, Key, Value } from "./types.d.ts";
+/**
+ * Helper functions.
+ *
+ * @module
+ */
 
-/** A symbol which can be used to provide a custom method to generate an
+import { encodeBase64 } from "@std/encoding/base64";
+
+import type { OAuth2Token } from "./auth.ts";
+import { isKey, isLatLng } from "./guards.ts";
+import type { Entity, Key, Value } from "./types.ts";
+
+/**
+ * A symbol which can be used to provide a custom method to generate an
  * {@linkcode Entity} serialization for an object.  When performing
  * {@linkcode objectToEntity}, this method will be used instead of built in
  * serialization of objects to entities.
  *
- * ### Example
+ * @example
  *
  * ```ts
- * import { toEntity } from "google_datastore.ts";
+ * import { toEntity } from "jsr:@kitsonk/google-datastore";
  *
  * class A {
  *   a = "value";
@@ -89,7 +97,7 @@ export function toValue(value: unknown): Value | undefined {
           );
         }
         return {
-          blobValue: base64.encode(value.buffer),
+          blobValue: encodeBase64(value.buffer),
           excludeFromIndexes: true,
         };
       }

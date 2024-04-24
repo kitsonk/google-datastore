@@ -126,7 +126,6 @@ export interface GoogleDatastoreAdminV1ListIndexesResponse {
 
 /** This resource represents a long-running operation that is the result of a
  * network API call. */
-// deno-lint-ignore ban-types
 export interface GoogleLongrunningOperation<Response extends object> {
   /** If the value is `false`, it means the operation is still in progress. If
    * `true`, the operation is completed, and either `error` or `response` is

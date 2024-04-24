@@ -1,3 +1,12 @@
+// Copyright 2022-2024 Kitson P. Kelly. All rights reserved. MIT License
+
+/**
+ * Contains {@linkcode DatastoreError} which are raised by {@linkcode Datastore}
+ * and contain additional information about the error.
+ *
+ * @module
+ */
+
 /** Options that can be set when creating a {@linkcode DatastoreError}. */
 export interface DatastoreErrorOptions extends ErrorOptions {
   status?: number;
@@ -5,8 +14,10 @@ export interface DatastoreErrorOptions extends ErrorOptions {
   statusText?: string;
 }
 
-/** Errors using {@linkcode Datastore} will by of this type, which includes
- * extra info about the error. */
+/**
+ * Errors using {@linkcode Datastore} will by of this type, which includes
+ * extra info about the error.
+ */
 export class DatastoreError extends Error {
   #status?: number;
   #statusInfo?: unknown;

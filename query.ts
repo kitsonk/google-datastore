@@ -5,8 +5,9 @@
  * @module
  */
 
-import { type Auth } from "./auth.ts";
-import { base64 } from "./deps.ts";
+import { encodeBase64 } from "@std/encoding/base64";
+
+import type { Auth } from "./auth.ts";
 import { DatastoreError } from "./error.ts";
 import type {
   Entity,
@@ -18,8 +19,8 @@ import type {
   QueryResultBatch,
   RunQueryRequest,
   RunQueryResponse,
-} from "./types.d.ts";
-import { assert, getRequestHeaders, toValue } from "./util.ts";
+} from "./types.ts";
+import { assert, getRequestHeaders, toValue } from "./utils.ts";
 
 export const getQueryRequest = Symbol.for("google.datastore.getQueryRequest");
 
@@ -55,7 +56,7 @@ function asStringBytes(value: string | ArrayBufferView): string {
   if (typeof value === "string") {
     return value;
   }
-  return base64.encode(value.buffer);
+  return encodeBase64(value.buffer);
 }
 
 function asPropertyFilter(
@@ -190,7 +191,7 @@ export class Query implements QueryRequestGenerator {
     return this;
   }
 
-  [getQueryRequest]() {
+  [getQueryRequest](): RunQueryRequest {
     const request: RunQueryRequest = {};
     if (this.#partition) {
       request.partitionId = this.#partition;

@@ -1,6 +1,7 @@
-// Copyright 2022 Kitson P. Kelly. All rights reserved. MIT License
+// Copyright 2022-2024 Kitson P. Kelly. All rights reserved. MIT License
 
-/** APIs for using [Google Datastore](https://cloud.google.com/datastore) from
+/**
+ * APIs for using [Google Datastore](https://cloud.google.com/datastore) from
  * Deno.
  *
  * Google Datastore is Firestore in Datastore under the hood these days, but has
@@ -18,11 +19,21 @@
  * objects with {@linkcode entityToObject} will already have their key set, so
  * can be mutated and then converted back to an entity and not lose their key.
  *
+ * @example
+ *
+ * ```ts
+ * import { Datastore } from "jsr:@kitsonk/google-datastore";
+ * import keys from "./service-account.json" with { type: "json" };
+ *
+ * const datastore = new Datastore(keys);
+ * ```
+ *
  * @module
  */
 
+import { decodeBase64 } from "@std/encoding/base64";
+
 import { Auth } from "./auth.ts";
-import { base64 } from "./deps.ts";
 import { DatastoreError } from "./error.ts";
 export { DatastoreError } from "./error.ts";
 import {
@@ -66,9 +77,9 @@ import type {
   RunQueryResponse,
   TransactionOptions,
   Value,
-} from "./types.d.ts";
-import { datastoreKey, getRequestHeaders } from "./util.ts";
-export { objectToEntity, toEntity } from "./util.ts";
+} from "./types.ts";
+import { datastoreKey, getRequestHeaders } from "./utils.ts";
+export { objectToEntity, toEntity } from "./utils.ts";
 
 /** The information from a service account JSON file that is used by the
  * {@linkcode Datastore} to be able to securely connect. */
@@ -98,7 +109,6 @@ interface ListOptions {
   pageToken?: string;
 }
 
-// deno-lint-ignore ban-types
 function optionsToQueryString<O extends object>(options?: O): string {
   return options
     ? `?${new URLSearchParams(Object.entries(options)).toString()}`
@@ -387,7 +397,7 @@ function tupleToPathElement(
 /** An interface to [Google Datastore](https://cloud.google.com/datastore). This
  * is the main class users should use to connect to a Google Datastore instance.
  *
- * ### Example
+ * @example
  *
  * ```ts
  * import { Datastore } from "https://deno.land/x/google_datastore/mod.ts";
@@ -813,7 +823,7 @@ export function datastoreValueToValue(value: Value): unknown {
       : [];
   }
   if (isValueBlob(value)) {
-    return base64.decode(value.blobValue);
+    return decodeBase64(value.blobValue);
   }
   if (isValueBoolean(value)) {
     return value.booleanValue;

@@ -1,13 +1,15 @@
-import { importPKCS8, SignJWT } from "./deps.ts";
-import { DatastoreError } from "./error.ts";
+// Copyright 2022-2024 Kitson P. Kelly. All rights reserved. MIT License
 
-// jose uses this and it isn't available under the built in libs in TypeScript
-declare global {
-  interface ErrorConstructor {
-    // deno-lint-ignore ban-types
-    captureStackTrace(error: Object, constructor?: Function): void;
-  }
-}
+/**
+ * Handles managing auth against GCP.
+ *
+ * @module
+ */
+
+import { importPKCS8, SignJWT } from "jose";
+import { assert } from "@std/assert/assert";
+
+import { DatastoreError } from "./error.ts";
 
 export interface ServiceAccountJSON {
   client_email: string;
@@ -16,12 +18,6 @@ export interface ServiceAccountJSON {
 }
 
 const ALG = "RS256";
-
-function assert(cond: unknown, message = "Assertion error") {
-  if (!cond) {
-    throw new Error(message);
-  }
-}
 
 interface OAuth2TokenJson {
   access_token: string;
@@ -71,7 +67,7 @@ export class OAuth2Token {
  * account and scopes.  Provides an instance of {@linkcode OAuth2Token} that
  * wraps the response from Google API OAuth2 service.
  *
- * ### Example
+ * @example
  *
  * ```ts
  * import { createOAuth2Token } from "https://deno.land/x/deno_gcp_admin/auth.ts";
@@ -169,7 +165,7 @@ export class Auth {
     this.host = init.datastore_host ?? "https://datastore.googleapis.com";
   }
 
-  get baseEndpoint() {
+  get baseEndpoint(): string {
     return `${this.host}/v1/projects/${this.init.project_id}`;
   }
 
